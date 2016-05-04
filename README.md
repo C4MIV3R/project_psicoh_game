@@ -21,9 +21,10 @@ Enemy:
 - Aim and fire bullets at player while player is within trigger area.
 - On being killed: wait a few seconds, fade sprite out, and then destroy gameObject
 
-Game as a whole:
-- Title screen
-- Add different scenes to be transitioned between when player beats a level
+General:
+- Title Screen with difficulty selector
 
-Stretch Goals:
+Stretch/Long-Term Goals:
+- Add different scenes to be transitioned between when player beats a level
 - Multiplayer networking for up to 4 player co-op
+- Commission artist for unique art assets
