@@ -19,7 +19,7 @@ Enemy:
 - Turn sprite towards player while player is within aforementioned trigger area.
 - When player is not within trigger area, enemy should patrol back and forth within an area.
 - Aim and fire bullets at player while player is within trigger area.
-- On being killed: wait a few seconds, fade spite out, and then destroy gameObject
+- On being killed: wait a few seconds, fade sprite out, and then destroy gameObject
 
 Game as a whole:
 - Title screen
