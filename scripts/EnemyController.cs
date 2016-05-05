@@ -1,5 +1,5 @@
 // TO DO:
-// Enemy AI - on player entering trigger area - begin tracking and firing at player
+// Enemy AI - on player entering trigger area - begin tracking and firing at player - MVP done
 // Patrol routes
 // On being killed - Destroy enemy gameObject
 
@@ -8,15 +8,18 @@ using System.Collections;
 
 public class EnemyController : MonoBehaviour {
 
+	public GameObject enemyBasicShot;
+	public Transform enemyShotSpawn;
 	public float maxSpeed;
 	public float jumpForce;
-	public LayerMask whatIsPlayer;
 	public float patrolSpeed = 8f;
 	public float chaseSpeed = 12f;
 	public float patrolWaitTime = 2f;
 	public float chaseWaitTime = 6f;
 	public Transform[] patrolWaypoints;
 	public bool isDead = false;
+	public float fireRate = 0.5f;
+	public float angle;
 
 	private Animator anim;
 	private GameObject enemy;
@@ -27,8 +30,11 @@ public class EnemyController : MonoBehaviour {
 	private Rigidbody2D rigidbody2D;
 	private BoxCollider2D boxCollider2D;
 	private AudioSource audioSource;
-	private SpriteRenderer spriteRenderer;
-	private Color spriteRendColor;
+	private Transform playerTransform;
+	private Vector3 playerPosition;
+	private Vector3 playerDir;
+	private float nextFire;
+
 
 	void Awake ()
 	{
@@ -39,8 +45,8 @@ public class EnemyController : MonoBehaviour {
 		boxCollider2D = GetComponent<BoxCollider2D>();
 		anim = GetComponent<Animator>();
 		audioSource = GetComponent<AudioSource>();
-		spriteRenderer = GetComponent<SpriteRenderer>();
-		spriteRendColor = spriteRenderer.color;
+		playerTransform = player.transform;
+		playerPosition = playerTransform.position;
 	} // end Awake
 
 	// Update is called once per frame
@@ -54,6 +60,8 @@ public class EnemyController : MonoBehaviour {
 		{
 			this.enabled = true;
 		}
+		playerPosition = playerTransform.position;
+
 	} // end Update
 
 	void OnCollisionEnter2D (Collision2D other)
@@ -68,7 +76,7 @@ public class EnemyController : MonoBehaviour {
 	{
 		if (other.gameObject.tag == "Player")
 		{
-
+			TurnToFace();
 		}
 	} // end OnTriggerEnter2D
 
@@ -76,7 +84,11 @@ public class EnemyController : MonoBehaviour {
 	{
 		if (other.gameObject.tag == "Player")
 		{
-
+			TurnToFace();
+			if (Time.time > nextFire)
+			{
+				Fire();
+			}
 		}
 	} // end OnTriggerStay2D
 
@@ -84,9 +96,18 @@ public class EnemyController : MonoBehaviour {
 	{
 		if (other.gameObject.tag == "Player")
 		{
-
+			anim.SetBool("IsFiring", false);
 		}
-	} // end OnTriggerExit2D
+	}
+
+	void TurnToFace ()
+	{
+		playerDir = playerPosition - transform.position;
+		playerDir.y = 0.0f;
+		angle = Mathf.Atan2(playerDir.y, playerDir.x) * Mathf.Rad2Deg;
+		// if angle = 180 - enemy facing left. if angle = 0 - enemy facing right.
+		transform.rotation = Quaternion.AngleAxis(angle, Vector3.up);
+	}
 
 	void Death ()
 	{
@@ -96,11 +117,18 @@ public class EnemyController : MonoBehaviour {
 		polygonCollider2D.enabled = false;
 		rigidbody2D.isKinematic = true;
 		boxCollider2D.enabled = false;
-		spriteRendColor = Color.Lerp(Color.white, Color.clear, 5);
 
 		this.enabled = false;
 		// Destroy(gameObject);
 	} // end Death
+
+	void Fire ()
+	{
+		anim.SetBool("IsFiring", true);
+		nextFire = Time.time + fireRate;
+		Instantiate (enemyBasicShot, enemyShotSpawn.position, enemyShotSpawn.rotation);
+		audioSource.Play();
+	}
 
 	// IEnumerator WaitTime (float time)
 	// {

@@ -1,6 +1,10 @@
+// Throughout all scripts - ~500 lines of code so far (May 5th, 2016)
+
 // TO DO:
-// Respawn player after death
-// animation for running and shooting front, up-diagonal, down-diagonal
+// Respawn player after death - DONE
+// animations for:
+// runningFront - DONE
+// running and shooting up and down
 // collision with enemies doesn't push enemies around (Necessary now that player dies on contact?)
 // Game Over script/function
 
@@ -10,8 +14,9 @@ using System.Collections;
 public class PlayerController : MonoBehaviour
 {
 		// -------------- public variables ---------------
-		public int numberOfLives = 11;
-		public float maxSpeed = 15f;
+
+		public int numberOfLives = 5;
+		public float speed = 15f;
 		public float dashSpeed = 22f;
 		public Transform groundCheck;
 		public LayerMask whatIsGround;
@@ -21,6 +26,7 @@ public class PlayerController : MonoBehaviour
 		public float fireRate;
 		public bool facingRight = true;
 		public bool isDead = false;
+		public float timeToWait = 5f;
 
 		// ---------------- private variables ---------------
 		private Animator anim;
@@ -28,7 +34,6 @@ public class PlayerController : MonoBehaviour
 		private AudioSource audioSource;
 		private bool grounded = false;
 		private float groundRadius = 1f;
-		private bool IsRunning = false;
 		private float nextFire;
 		private PlayerController playerController;
 		private GameObject enemy;
@@ -46,12 +51,6 @@ public class PlayerController : MonoBehaviour
 
 		} // end Awake
 
-		// using Start to respawn player on first frame of game
-		void Start ()
-		{
-			Respawn();
-		}
-
 		void Update ()
 		{
 			if (grounded && Input.GetKeyDown(KeyCode.Space))
@@ -67,6 +66,10 @@ public class PlayerController : MonoBehaviour
 			{
 				anim.SetBool("IsFiring", false);
 			}
+			if (!grounded && Input.GetKey(KeyCode.Z) && Time.time > nextFire)
+			{
+				Fire();
+			}
 		} // end Update
 
 		// FixedUpdate called once per physics movement
@@ -76,24 +79,23 @@ public class PlayerController : MonoBehaviour
 			anim.SetBool("Ground", grounded);
 			anim.SetFloat("vSpeed", playerRigidbody.velocity.y);
 			// Get player's horizontal input via WASD or Arrow Keys
-			float horz = Input.GetAxis("Horizontal");
-			// float vert = Input.GetAxis("Vertical");
-			// lookRight should be true when holding right arrow or 'D' key.
-			// BUT RunningFrontShooting animation should only fire when both lookRight is true and fire is true
-			// Otherwise use the basic running animation
-			// bool runRight 	= horz > 0f;
-			// bool runLeft 	= horz < 0f;
-			// bool lookUp 		= vert > 0f;
-			// bool lookDown 	= vert < 0f;
-
-			bool running = horz != 0f;
-			anim.SetBool("IsRunning", running);
+			float horz 			= Input.GetAxis("Horizontal");
+			float vert 			= Input.GetAxis("Vertical");
+			bool lookUp 		= vert > 0f;
+			bool lookDown 	= vert < 0f;
+			bool running 		= horz != 0f;
 
 			// set speed equal to movement speed
 			anim.SetFloat("Speed", Mathf.Abs(horz));
+			// set vertLook equal to looking up or down float
+			anim.SetFloat("vertLook", Mathf.Abs(vert));
+			// Set IsRunning based on if horz != 0
+			anim.SetBool("IsRunning", running);
+			anim.SetBool("lookUp",lookUp);
+			anim.SetBool("lookDown", lookDown);
 
 			// Apply force to player model via playerRigidbody
-			playerRigidbody.velocity = new Vector2(horz * maxSpeed, playerRigidbody.velocity.y);
+			playerRigidbody.velocity = new Vector2(horz * speed, playerRigidbody.velocity.y);
 
 			if (Input.GetKey(KeyCode.LeftShift) && horz != 0f)
 			{
@@ -101,8 +103,14 @@ public class PlayerController : MonoBehaviour
 			}
 			if (Input.GetKey(KeyCode.LeftShift) != true)
 			{
-				maxSpeed = 15f;
+				speed = 15f;
 				anim.SetBool("IsDashing", false);
+			}
+			if (lookUp && running) {
+				anim.SetBool("RunningLookingUp", true);
+			}
+			if (lookDown && running) {
+				anim.SetBool("RunningLookingDown", true);
 			}
 
 // ----------- Flip Block ----------------
@@ -133,11 +141,11 @@ public class PlayerController : MonoBehaviour
 				audioSource.Play();
 		} // end Fire
 
-		// Dashing function - sets dash animation to true and sets maxSpeed to dashing speed
+		// Dashing function - sets dash animation to true and sets speed to dashing speed
 		void Dash ()
 		{
 			anim.SetBool("IsDashing", true);
-			maxSpeed = dashSpeed;
+			speed = dashSpeed;
 		} // end Dash
 
 		public void Death ()
@@ -153,25 +161,22 @@ public class PlayerController : MonoBehaviour
 
 		void Respawn ()
 		{
-			if (numberOfLives == 11)
-			{
-				numberOfLives = numberOfLives - 1;
-			}
-			else if (numberOfLives < 11 && numberOfLives > 0) {
+			if (numberOfLives <= 10 && numberOfLives > 0) {
 				Vector3 spawnPoint = new Vector3(-37.54f, 12.03f, 0f);
 				transform.position = spawnPoint;
 				// re-enable player's ability to move
 				playerController.enabled = true;
 				// set isDead to false
 				isDead = false;
-				// reset IsDead animation - can I reverse the animation?
+				// trigger IsDead
 				anim.SetTrigger("IsDead");
+				// subtract 1 from the numberOfLives
 				numberOfLives = numberOfLives - 1;
 			}
 			else
 			{
-				// need to create a function or script to go to for GAME OVER
-
+				// TO BE IMPLEMENTED
+				// GameOver();
 				Debug.Log("GAME OVER");
 			}
 		}
@@ -185,10 +190,17 @@ public class PlayerController : MonoBehaviour
 				// kill player
 				Death();
 			}
+			// if player is hit by EnemyBullet...
+			if (coll.gameObject.tag == "EnemyBullet")
+			{
+				// kill player
+				Death();
+			}
 		} //  end OnCollisionEnter2D
 
-		void GameOver()
-		{
-			
-		}
+		// TO BE IMPLEMENTED
+		// void GameOver()
+		// {
+		//
+		// }
 } // end PlayerController
